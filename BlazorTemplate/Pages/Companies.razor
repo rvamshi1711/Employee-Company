@@ -10,23 +10,10 @@
     <div>
         Total items: @_totalItemsCount
     </div>
-
-    <!-- Search Input -->
-    <input type="text" class="form-control mb-3" placeholder="Search companies..." @bind="_searchTerm"
-        @bind:event="oninput" />
-
-    <button class="btn btn-primary" @onclick="OnSearchClick">
-        Search
-    </button>
-
-    <QuickGrid Items="@_filteredCompanies" Virtualize="true" @ref="_dataGrid">
+    <QuickGrid ItemsProvider="@_provider" Virtualize="true" @ref="_dataGrid">
         <PropertyColumn Property="@(p => p.Name)" Sortable="true" IsDefaultSortColumn="true" Title="Company Name" />
-        <PropertyColumn Property="@(p => p.WorkerCount)" Sortable="true" Title="Workers" />
-        <PropertyColumn Property="@(p => p.State)" Sortable="true" Title="State" />
+        <PropertyColumn Property="@(p => p.WorkerCount)" Sortable="true" IsDefaultSortColumn="true" Title="Workers" />
         <TemplateColumn>
-            <button class="btn btn-sm btn-outline-danger" @onclick="@(_ => UpdateCompanyAsync(context.CompanyId))">
-                Update
-            </button>
             <button class="btn btn-sm btn-outline-danger" @onclick="@(_ => DeleteCompanyAsync(context.CompanyId))">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash"
                     viewBox="0 0 16 16">
@@ -41,7 +28,7 @@
     </QuickGrid>
 </div>
 
-<a class="btn btn-primary btn-lg add-btn" href="/companies/add">
+<a class="btn btn-primary btn-lg add-btn" href="AddWorker">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg"
         viewBox="0 0 16 16">
         <path fill-rule="evenodd"

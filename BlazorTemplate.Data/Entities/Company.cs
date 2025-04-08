@@ -14,13 +14,6 @@ public partial class Company
     [Required]
     public string Name { get; set; } = default!;
     public virtual ICollection<Worker> Workers { get; set; } = [];
-    //added v1
+
     public int WorkerCount { get; set; }
-    //added v2
-    public string? City { get; set; }
-
-    public string? State { get; set; }
-
-    public string? ZipCode { get; set; }
-
 }

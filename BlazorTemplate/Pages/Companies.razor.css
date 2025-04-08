@@ -1,0 +1,12 @@
+.home-card {
+    box-shadow: 0px 2px 3px #222222;
+    border-radius: 24px;
+    padding: 16px;
+}
+
+.add-btn {
+    position: absolute;
+    right: 24px;
+    bottom: 24px;
+    box-shadow: 0px 2px 3px #222222;
+}

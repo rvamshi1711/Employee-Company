@@ -8,8 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BlazorTemplate.Pages;
 
-public partial class AddWorker(IDbContextFactory<ApplicationDbContext> dbFactory, ILogger<AddWorker> logger, NavigationManager navManager)
-{
+public partial class AddWorker(IDbContextFactory<ApplicationDbContext> dbFactory, ILogger<AddWorker> logger, NavigationManager navManager) {
     private readonly IDbContextFactory<ApplicationDbContext> _dbFactory = dbFactory;
     private readonly ILogger<AddWorker> _logger = logger;
     private readonly Model _model = new();
@@ -18,8 +17,7 @@ public partial class AddWorker(IDbContextFactory<ApplicationDbContext> dbFactory
     private Company[] _companies = default!;
 
     /// <inheritdoc />
-    protected override async Task OnInitializedAsync()
-    {
+    protected override async Task OnInitializedAsync() {
         await base.OnInitializedAsync();
         await using var db = await _dbFactory.CreateDbContextAsync();
         _companies = await db.Companies
@@ -32,11 +30,9 @@ public partial class AddWorker(IDbContextFactory<ApplicationDbContext> dbFactory
     /// <summary>
     /// Adds the entered worker into the database and returns the user to the workers page.
     /// </summary>
-    private async Task SubmitWorkerAsync()
-    {
+    private async Task SubmitWorkerAsync() {
         _logger.LogInformation("Saving new worker {}", _model.FirstName + " " + _model.LastName);
-        var worker = new Worker
-        {
+        var worker = new Worker {
             AssignedCompanyId = _model.AssignedCompanyId,
             FirstName = _model.FirstName,
             LastName = _model.LastName,
@@ -48,23 +44,10 @@ public partial class AddWorker(IDbContextFactory<ApplicationDbContext> dbFactory
         await using var db = await _dbFactory.CreateDbContextAsync();
         await db.AddAsync(worker);
         await db.SaveChangesAsync();
-
-        var company = await db.Companies
-        .Include(c => c.Workers)
-        .FirstOrDefaultAsync(c => c.CompanyId == worker.AssignedCompanyId);
-
-        if (company is not null)
-        {
-            company.WorkerCount = company.Workers.Count;
-            await db.SaveChangesAsync();
-            _logger.LogInformation("Updated WorkerCount for '{}': {}", company.Name, company.WorkerCount);
-
-            _navManager.NavigateTo("/");
-        }
+        _navManager.NavigateTo("/");
     }
 
-    private sealed class Model
-    {
+    private sealed class Model {
         public int? AssignedCompanyId { get; set; }
 
         [Required, Range(typeof(DateOnly), "01/01/1920", "01/01/2020", ErrorMessage = "Value for {0} must be between {1} and {2}")]

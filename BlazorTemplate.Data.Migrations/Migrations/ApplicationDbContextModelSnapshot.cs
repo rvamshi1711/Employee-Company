@@ -23,21 +23,12 @@ namespace BlazorTemplate.Data.Migrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("City")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("State")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("WorkerCount")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("ZipCode")
-                        .HasColumnType("TEXT");
 
                     b.HasKey("CompanyId");
 

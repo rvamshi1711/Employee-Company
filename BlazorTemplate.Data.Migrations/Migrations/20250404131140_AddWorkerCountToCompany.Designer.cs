@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorTemplate.Data.Migrations.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250404105436_AddWorkerCountToCompany")]
+    [Migration("20250404131140_AddWorkerCountToCompany")]
     partial class AddWorkerCountToCompany
     {
         /// <inheritdoc />

@@ -1,118 +1,112 @@
+
+
 using BlazorTemplate.Data;
 using BlazorTemplate.Data.Entities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.QuickGrid;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
-namespace BlazorTemplate.Pages
+namespace BlazorTemplate.Pages;
+
+public partial class Companies(IDbContextFactory<ApplicationDbContext> dbFactory, ILogger<Companies> logger)
 {
-    public partial class Companies : ComponentBase
+    // TODO: Implement logic matching that of AddWorker.razor.cs except for the company table.
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory = dbFactory;
+    private readonly ILogger<Companies> _logger = logger;
+
+    private QuickGrid<Company> _dataGrid = default!;
+    private GridItemsProvider<Company> _provider = default!;
+    private int _totalItemsCount;
+
+    protected override async Task OnInitializedAsync()
     {
-        [Inject] private IDbContextFactory<ApplicationDbContext> DbFactory { get; set; } = default!;
-        [Inject] private ILogger<Companies> Logger { get; set; } = default!;
-        [Inject] private NavigationManager Navigation { get; set; } = default!; // Inject NavigationManager
+        await base.OnInitializedAsync();
 
-        private QuickGrid<Company> _dataGrid = default!;
-        private string _searchTerm = string.Empty; // Search term for filtering
-        private List<Company> _companies = new List<Company>(); // Store all companies
-        private IQueryable<Company> _filteredCompanies = Enumerable.Empty<Company>().AsQueryable(); // Store filtered companies
-        private int _totalItemsCount = 0; // Track total items count for display
-
-        protected override async Task OnInitializedAsync()
+        await UpdateWorkerCountForAllCompanies();
+        _provider = async request =>
         {
-            await base.OnInitializedAsync();
-            await LoadCompaniesAsync();
-        }
-
-        private async Task LoadCompaniesAsync()
-        {
-            await using var db = await DbFactory.CreateDbContextAsync();
-            _companies = await db.Companies.ToListAsync();
-            _totalItemsCount = _companies.Count; // Set total item count
-            _filteredCompanies = _companies.AsQueryable(); // Initially load all companies
-        }
-
-        private async Task OnSearchClick()
-        {
-            Logger.LogInformation("Search triggered with term: {0}", _searchTerm);
-
-            if (string.IsNullOrEmpty(_searchTerm))
+            var providerResult = new GridItemsProviderResult<Company>()
             {
-                _filteredCompanies = _companies.AsQueryable(); // Show all companies if no search term
-            }
-            else
-            {
-                _filteredCompanies = _companies
-                    .Where(c => c.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
-                    .AsQueryable(); // Filter companies by name
-            }
+                Items = [],
+                TotalItemCount = 0
+            };
 
-            _totalItemsCount = _filteredCompanies.Count(); // Update item count based on filtered companies
-
-            // Refresh the data grid after applying the search filter
-            await _dataGrid.RefreshDataAsync();
-
-            StateHasChanged(); // Ensure UI updates
-        }
-
-        private async Task DeleteCompanyAsync(int companyId)
-        {
-            Logger.LogInformation("Deleting company with id {}", companyId);
-
-            await using var db = await DbFactory.CreateDbContextAsync();
-            var company = await db.Companies
-                .Include(c => c.Workers)
-                .FirstOrDefaultAsync(c => c.CompanyId == companyId);
-
-            if (company != null)
-            {
-                // Nullify worker's company association
-                foreach (var worker in company.Workers)
-                {
-                    worker.AssignedCompanyId = null;
-                }
-
-                await db.SaveChangesAsync();
-
-                // Delete the company
-                db.Companies.Remove(company);
-                await db.SaveChangesAsync();
-
-                Logger.LogInformation("Company with id {} deleted successfully.", companyId);
-
-                // Reload the companies after deletion
-                await LoadCompaniesAsync();
-
-                // Refresh the data grid after deletion
-                await _dataGrid.RefreshDataAsync();
-                StateHasChanged(); // Ensure UI updates
-            }
-        }
-
-        private async Task UpdateCompanyAsync(int companyId)
-        {
             try
             {
-                await using var db = await DbFactory.CreateDbContextAsync();
+                _logger.LogInformation("Loading companies from database...");
+                _logger.LogInformation("StartIndex: {}, Count: {}, Sort: {}", request.StartIndex, request.Count, string.Join(", ", request.GetSortByProperties()));
 
-                // Fetch the company based on the provided companyId
-                var company = await db.Companies.FirstOrDefaultAsync(c => c.CompanyId == companyId);
+                await using var db = await _dbFactory.CreateDbContextAsync(request.CancellationToken);
 
-                if (company != null)
+                var query = db.Companies
+                              .AsNoTracking()
+                              .Include(c => c.Workers)
+                              .Skip(request.StartIndex);
+
+                if (request.Count.HasValue)
                 {
-                    // Redirect to the edit page with the company details preloaded
-                    Navigation.NavigateTo($"/companies/edit/{companyId}");
+                    query = query.Take(request.Count.Value);
                 }
-                else
+
+                var count = await db.Companies.CountAsync(request.CancellationToken);
+
+                if (count != _totalItemsCount && !request.CancellationToken.IsCancellationRequested)
                 {
-                    Logger.LogWarning("Company with id {CompanyId} not found", companyId);
+                    _totalItemsCount = count;
+                    StateHasChanged();
                 }
+
+                providerResult = new GridItemsProviderResult<Company>
+                {
+                    Items = await request.ApplySorting(query).ToArrayAsync(request.CancellationToken),
+                    TotalItemCount = count
+                };
             }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Error updating company.");
-            }
+            catch when (request.CancellationToken.IsCancellationRequested) { }
+
+            return providerResult;
+        };
+    }
+
+    private async Task UpdateWorkerCountForAllCompanies()
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+
+        // Fetch all companies from the database
+        var companies = await db.Companies.ToListAsync();
+
+        foreach (var company in companies)
+        {
+            // Recalculate WorkerCount based on the number of workers assigned to each company
+            company.WorkerCount = await db.Workers
+                .CountAsync(w => w.AssignedCompanyId == company.CompanyId);
+
+            // Save the updated WorkerCount to the database
+            await db.SaveChangesAsync();
+            _logger.LogInformation("Updated WorkerCount for company '{}': {}", company.Name, company.WorkerCount);
+        }
+    }
+
+    private async Task DeleteCompanyAsync(int companyId)
+    {
+        _logger.LogInformation("Deleting company with id {}", companyId);
+
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var company = await db.Companies
+            .Include(c => c.Workers)
+            .FirstOrDefaultAsync(c => c.CompanyId == companyId);
+
+        if (company is not null)
+        {
+            db.Companies.Remove(company);
+            await db.SaveChangesAsync();
+            _logger.LogInformation("Successfully deleted company {}", companyId);
+            await _dataGrid.RefreshDataAsync();
+        }
+        else
+        {
+            _logger.LogWarning("Company with id {} not found", companyId);
         }
     }
 }
+
