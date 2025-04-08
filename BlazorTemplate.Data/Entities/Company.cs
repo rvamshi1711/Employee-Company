@@ -16,4 +16,10 @@ public partial class Company
     public virtual ICollection<Worker> Workers { get; set; } = [];
 
     public int WorkerCount { get; set; }
+
+    public string? City { get; set; }
+
+    public string? State { get; set; }
+
+    public string? ZipCode { get; set; }
 }

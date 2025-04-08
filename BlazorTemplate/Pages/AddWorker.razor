@@ -21,19 +21,19 @@
     <div>
         <label class="form-label">
             Email:
-            <InputText class="form-control"@bind-Value="_model.Email" />
+            <InputText class="form-control" @bind-Value="_model.Email" />
         </label>
     </div>
     <div>
         <label class="form-label">
             Phone Number:
-            <InputText class="form-control"@bind-Value="_model.PhoneNumber" />
+            <InputText class="form-control" @bind-Value="_model.PhoneNumber" />
         </label>
     </div>
     <div>
         <label class="form-label">
             Date of Birth:
-            <InputDate class="form-control"@bind-Value="_model.BirthDate" />
+            <InputDate class="form-control" @bind-Value="_model.BirthDate" />
         </label>
     </div>
     <div>
@@ -41,7 +41,8 @@
             Company:
             <InputSelect class="form-select" @bind-Value="_model.AssignedCompanyId">
                 <option selected>Select a company from the list</option>
-                @foreach (var company in _companies ?? []) {
+                @foreach (var company in _companies ?? [])
+                {
                     <option value="@company.CompanyId">@company.Name</option>
                 }
             </InputSelect>
