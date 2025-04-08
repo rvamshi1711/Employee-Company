@@ -49,19 +49,22 @@ public partial class AddWorker(IDbContextFactory<ApplicationDbContext> dbFactory
         await db.AddAsync(worker);
         await db.SaveChangesAsync();
 
-        var company = await db.Companies
-        .Include(c => c.Workers)
-        .FirstOrDefaultAsync(c => c.CompanyId == worker.AssignedCompanyId);
-
+        // Update WorkerCount of the Company after adding the worker
+        var company = await db.Companies.FirstOrDefaultAsync(c => c.CompanyId == worker.AssignedCompanyId);
         if (company is not null)
         {
-            company.WorkerCount = company.Workers.Count;
+            company.WorkerCount = await db.Workers
+                .Where(w => w.AssignedCompanyId == company.CompanyId)
+                .CountAsync();
+
             await db.SaveChangesAsync();
             _logger.LogInformation("Updated WorkerCount for '{}': {}", company.Name, company.WorkerCount);
-
-            _navManager.NavigateTo("/");
         }
+
+
+        _navManager.NavigateTo("/");
     }
+
 
     private sealed class Model
     {

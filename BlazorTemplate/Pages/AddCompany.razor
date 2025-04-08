@@ -1,8 +1,8 @@
 @page "/companies/add"
-
+@page "/companies/edit/{CompanyId:int?}"
 @rendermode InteractiveServer
-<PageTitle>Add Company</PageTitle>
-
+<PageTitle>@(_isEditMode ? "Edit Company" : "Add Company")</PageTitle>
+<!-- #Add or Edit Company -->
 <EditForm Model="@_model" OnValidSubmit="SubmitCompanyAsync">
     <DataAnnotationsValidator />
     <ValidationSummary />
@@ -27,5 +27,7 @@
         <InputText class="form-control" @bind-Value="_model.ZipCode" />
     </div>
 
-    <button type="submit" class="btn btn-primary">Submit</button>
+    <button type="submit" class="btn btn-primary">
+        @(_isEditMode ? "Update" : "Submit")
+    </button>
 </EditForm>
