@@ -12,6 +12,8 @@ public partial class Home(IDbContextFactory<ApplicationDbContext> dbFactory, ILo
     private readonly ILogger<Home> _logger = logger;
 
     private QuickGrid<Worker> _dataGrid = default!;
+
+    private PaginationState pagination = new PaginationState { ItemsPerPage = 5 };
     private GridItemsProvider<Worker> _provider = default!;
     private int _totalItemsCount;
 
@@ -21,43 +23,51 @@ public partial class Home(IDbContextFactory<ApplicationDbContext> dbFactory, ILo
         await base.OnInitializedAsync();
 
         _provider = async request =>
-        {
-            var providerResult = new GridItemsProviderResult<Worker>()
-            {
-                Items = [],
-                TotalItemCount = 0
-            };
-            try
-            {
-                _logger.LogInformation("Loading workers from database...");
-                _logger.LogInformation("Applying filters, StartIndex: {}, Count: {}, Sorting On: {}", request.StartIndex, request.Count, string.Join(", ", request.GetSortByProperties()));
-                await using var db = await _dbFactory.CreateDbContextAsync(request.CancellationToken);
-                var workersQuery = db.Workers
-                    .AsNoTracking()
-                    .Include(c => c.AssignedCompany)
-                    .Skip(request.StartIndex);
+ {
+     var providerResult = new GridItemsProviderResult<Worker>()
+     {
+         Items = Array.Empty<Worker>(),
+         TotalItemCount = 0
+     };
 
-                if (request.Count.HasValue)
-                {
-                    workersQuery = workersQuery.Take(request.Count.Value);
-                }
-                var count = await workersQuery.CountAsync(request.CancellationToken);
+     try
+     {
+         _logger.LogInformation("Loading workers from database...");
+         _logger.LogInformation("Applying filters, StartIndex: {}, Count: {}, Sorting On: {}", request.StartIndex, request.Count, string.Join(", ", request.GetSortByProperties()));
 
-                if (count != _totalItemsCount && !request.CancellationToken.IsCancellationRequested)
-                {
-                    _totalItemsCount = count;
-                    StateHasChanged();
-                }
+         await using var db = await _dbFactory.CreateDbContextAsync(request.CancellationToken);
 
-                providerResult = new GridItemsProviderResult<Worker>()
-                {
-                    Items = await request.ApplySorting(workersQuery).ToArrayAsync(request.CancellationToken),
-                    TotalItemCount = count
-                };
-            }
-            catch when (request.CancellationToken.IsCancellationRequested) { } // Ignore
-            return providerResult;
-        };
+
+         var totalCount = await db.Workers.CountAsync(request.CancellationToken);
+
+
+         var workersQuery = db.Workers
+             .AsNoTracking()
+             .Include(c => c.AssignedCompany)
+             .OrderBy(w => w.WorkerId)
+             .Skip(request.StartIndex)
+             .Take(request.Count ?? 0);
+
+         providerResult = new GridItemsProviderResult<Worker>()
+         {
+             Items = await request.ApplySorting(workersQuery).ToArrayAsync(request.CancellationToken),
+             TotalItemCount = totalCount
+         };
+
+         if (_totalItemsCount != totalCount && !request.CancellationToken.IsCancellationRequested)
+         {
+             _totalItemsCount = totalCount;
+             StateHasChanged();
+         }
+     }
+     catch when (request.CancellationToken.IsCancellationRequested)
+     {
+
+     }
+
+     return providerResult;
+ };
+
     }
 
     /// <summary>

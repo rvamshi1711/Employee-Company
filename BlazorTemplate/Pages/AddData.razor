@@ -1,0 +1,11 @@
+@page "/adddata"
+@rendermode InteractiveServer
+
+<h3>Add 5 Random Workers</h3>
+
+<button class="btn btn-primary" @onclick="SeedWorkersAsync">Add Workers</button>
+
+@if (!string.IsNullOrEmpty(StatusMessage))
+{
+    <p class="mt-3 text-success">@StatusMessage</p>
+}

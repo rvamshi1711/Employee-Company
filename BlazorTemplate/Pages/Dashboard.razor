@@ -1,0 +1,60 @@
+@page "/dashboard"
+@rendermode InteractiveServer
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Charts
+@using Microsoft.EntityFrameworkCore
+
+<div class="mb-4">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Companies</h5>
+                    <p class="card-text display-4">@totalCompanies</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Employees</h5>
+                    <p class="card-text display-4">@totalEmployees</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3>Number of Employees per Company</h3>
+
+@if (chartDataLoaded && chartData?.Any() == true)
+{
+    <div class="chart-container" style="min-height: 400px;">
+        <SfChart>
+            <ChartPrimaryXAxis Title="Company Name" ValueType="Syncfusion.Blazor.Charts.ValueType.Category"
+                LabelIntersectAction="LabelIntersectAction.Rotate45" />
+
+            <ChartPrimaryYAxis Title="Number of Employees" />
+
+            <ChartTooltipSettings Enable="true" />
+
+            <ChartSeriesCollection>
+                <ChartSeries DataSource="@chartData" XName="CompanyName" YName="EmployeeCount"
+                    Type="ChartSeriesType.Column">
+                </ChartSeries>
+            </ChartSeriesCollection>
+        </SfChart>
+    </div>
+    /*
+    <ul>
+    @foreach (var item in chartData)
+    {
+    <li>@item.CompanyName → <strong>@item.EmployeeCount</strong></li>
+    }
+    </ul>
+    */
+}
+else
+{
+    <p><em>Loading chart data...</em></p>
+}
